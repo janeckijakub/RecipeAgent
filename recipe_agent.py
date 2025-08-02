@@ -83,7 +83,13 @@ Odpowiedź musi być w formacie JSON zgodnym z następującą strukturą:
     json_end = response_text.rfind('}') + 1
     json_str = response_text[json_start:json_end]
 
-    recipes_dict = json.loads(json_str)
+    try:
+        recipes_dict = json.loads(json_str)
+    except json.JSONDecodeError as e:
+        print("Błąd parsowania JSON:", e)
+        print("Odpowiedź API:", response_text)
+        raise e
+    
     przepisy = Przepisy(**recipes_dict)
     return przepisy
 
@@ -142,5 +148,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
