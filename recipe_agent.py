@@ -1,73 +1,131 @@
-# -*- coding: utf-8 -*-
-
+import streamlit as st
 from pydantic import BaseModel, Field
 from typing import List
 import json
 from anthropic import Anthropic
 
-class Ingredient(BaseModel):
-    name: str = Field(description="Ingredient name")
-    quantity: str = Field(description="Quantity of the ingredient")
-    unit: str = Field(description="Unit of measurement")
+class Skladnik(BaseModel):
+    nazwa: str = Field(description="Nazwa składnika")
+    ilosc: str = Field(description="Ilość składnika")
+    jednostka: str = Field(description="Jednostka miary, np. gram, łyżka, sztuka")
 
-class PreparationStep(BaseModel):
-    step_number: int = Field(description="Step number")
-    description: str = Field(description="Description of the step")
+class KrokPrzygotowania(BaseModel):
+    numer: int = Field(description="Numer kroku")
+    opis: str = Field(description="Opis czynności do wykonania")
 
-class Recipe(BaseModel):
-    title: str = Field(description="Recipe title")
-    prep_time: str = Field(description="Preparation time")
-    difficulty: str = Field(description="Difficulty level")
-    ingredients: List[Ingredient] = Field(description="List of ingredients")
-    steps: List[PreparationStep] = Field(description="Preparation steps")
-    notes: str = Field(description="Additional notes or suggestions")
+class Przepis(BaseModel):
+    nazwa: str = Field(description="Nazwa potrawy")
+    czas_przygotowania: str = Field(description="Czas potrzebny na przygotowanie")
+    poziom_trudnosci: str = Field(description="Poziom trudności: łatwy, średni lub trudny")
+    skladniki: List[Skladnik] = Field(description="Lista składników potrzebnych do przygotowania")
+    kroki: List[KrokPrzygotowania] = Field(description="Lista kroków przygotowania potrawy")
+    sugestie: str = Field(description="Dodatkowe sugestie lub warianty przepisu")
 
-class RecipeAgent:
-    def __init__(self, api_key: str):
-        self.client = Anthropic(api_key=api_key)
-        self.model = "claude-3-7-sonnet-20250219"
+class Przepisy(BaseModel):
+    przepisy: List[Przepis] = Field(description="Lista przepisów na podstawie podanych składników")
 
-    def generate_recipes(self, fridge_ingredients: str) -> List[Recipe]:
-        prompt = f"""
-You have the following ingredients: {fridge_ingredients}
+def generuj_przepisy(api_key: str, skladniki_w_lodowce: str) -> Przepisy:
+    client = Anthropic(api_key=api_key)
 
-Generate THREE distinct recipes using these ingredients. Each recipe should be different in cuisine or type (appetizer, main course, dessert).
-Assume basic pantry items (salt, pepper, oil) are available.
+    prompt = f"""Na podstawie podanych składników, które użytkownik ma w lodówce, zaproponuj TRZY różne przepisy kulinarne.
+Składniki dostępne w lodówce: {skladniki_w_lodowce}
 
-Return the response as JSON with this structure:
+Utwórz 3 różne przepisy, które wykorzystują te składniki. Każdy przepis powinien być inny - np. z innej kuchni świata
+lub reprezentować inny typ dania (przystawka, danie główne, deser). Jeśli brakuje jakichś podstawowych składników,
+możesz założyć, że użytkownik ma je w swojej kuchni (jak sól, pieprz, oliwa).
 
+Odpowiedź musi być w formacie JSON zgodnym z następującą strukturą:
 {{
-  "recipes": [
+  "przepisy": [
     {{
-      "title": "Recipe 1",
-      "prep_time": "e.g. 30 minutes",
-      "difficulty": "easy/medium/hard",
-      "ingredients": [
-        {{ "name": "ingredient1", "quantity": "number", "unit": "e.g. grams, pieces, tbsp" }},
-        ...
+      "nazwa": "Nazwa przepisu 1",
+      "czas_przygotowania": "np. 30 minut",
+      "poziom_trudnosci": "łatwy/średni/trudny",
+      "skladniki": [
+        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram/sztuka/łyżka" }},
+        {{ "nazwa": "składnik 2", "ilosc": "liczba", "jednostka": "np. gram/sztuka/łyżka" }}
       ],
-      "steps": [
-        {{ "step_number": 1, "description": "First step" }},
-        ...
+      "kroki": [
+        {{ "numer": 1, "opis": "Pierwszy krok przygotowania" }},
+        {{ "numer": 2, "opis": "Drugi krok przygotowania" }}
       ],
-      "notes": "Additional notes"
+      "sugestie": "Dodatkowe sugestie dotyczące przepisu"
     }},
-    ...
+    {{
+      "nazwa": "Nazwa przepisu 2",
+      "czas_przygotowania": "np. 45 minut",
+      "poziom_trudnosci": "łatwy/średni/trudny",
+      "skladniki": [...],
+      "kroki": [...],
+      "sugestie": "Dodatkowe sugestie dotyczące przepisu"
+    }},
+    {{
+      "nazwa": "Nazwa przepisu 3",
+      "czas_przygotowania": "np. 20 minut",
+      "poziom_trudnosci": "łatwy/średni/trudny",
+      "skladniki": [...],
+      "kroki": [...],
+      "sugestie": "Dodatkowe sugestie dotyczące przepisu"
+    }}
   ]
 }}
 """
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=4000,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-        )
-        text = response.content[0].text
-        json_start = text.find('{')
-        json_end = text.rfind('}') + 1
-        json_str = text[json_start:json_end]
 
-        data = json.loads(json_str)
-        recipes = [Recipe(**r) for r in data.get("recipes", [])]
+    response = client.messages.create(
+        model="claude-3-7-sonnet-20250219",
+        max_tokens=4000,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+    )
 
-        return recipes
+    response_text = response.content[0].text
+    json_start = response_text.find('{')
+    json_end = response_text.rfind('}') + 1
+    json_str = response_text[json_start:json_end]
+
+    recipes_dict = json.loads(json_str)
+    przepisy = Przepisy(**recipes_dict)
+    return przepisy
+
+def main():
+    st.title("Generator przepisów kulinarnych 🍳")
+    st.write("Podaj składniki, które masz w lodówce, a ja zaproponuję Ci 3 różne przepisy.")
+
+    api_key = st.text_input("Wpisz swój klucz API Anthropic (ukryty)", type="password")
+    skladniki = st.text_area("Składniki (oddzielone przecinkami)", height=100)
+
+    if st.button("Generuj przepisy"):
+        if not api_key:
+            st.error("Proszę podać klucz API Anthropic.")
+            return
+        if not skladniki.strip():
+            st.error("Proszę podać składniki.")
+            return
+
+        with st.spinner("Generuję przepisy..."):
+            try:
+                przepisy = generuj_przepisy(api_key, skladniki)
+                for i, przepis in enumerate(przepisy.przepisy, 1):
+                    st.header(f"Przepis {i}: {przepis.nazwa}")
+                    st.markdown(f"**Czas przygotowania:** {przepis.czas_przygotowania}")
+                    st.markdown(f"**Poziom trudności:** {przepis.poziom_trudnosci}")
+
+                    st.subheader("Składniki:")
+                    for skladnik in przepis.skladniki:
+                        st.write(f"- {skladnik.ilosc} {skladnik.jednostka} {skladnik.nazwa}")
+
+                    st.subheader("Sposób przygotowania:")
+                    for krok in przepis.kroki:
+                        st.write(f"{krok.numer}. {krok.opis}")
+
+                    if przepis.sugestie.strip():
+                        st.subheader("Sugestie:")
+                        st.write(przepis.sugestie)
+
+                    st.markdown("---")
+
+            except Exception as e:
+                st.error(f"Wystąpił błąd podczas generowania przepisów: {e}")
+
+if __name__ == "__main__":
+    main()
