@@ -81,7 +81,7 @@ Odpowiedź musi być wyłącznie w formacie JSON, bez dodatkowego tekstu, zgodny
 
     response = client.messages.create(
         model="claude-3-7-sonnet-20250219",
-        max_tokens=2000,
+        max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
     )
@@ -142,3 +142,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
