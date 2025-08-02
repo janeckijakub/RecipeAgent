@@ -37,16 +37,15 @@ Utwórz 3 różne przepisy, które wykorzystują te składniki. Każdy przepis p
 lub reprezentować inny typ dania (przystawka, danie główne, deser). Jeśli brakuje jakichś podstawowych składników,
 możesz założyć, że użytkownik ma je w swojej kuchni (jak sól, pieprz, oliwa).
 
-Odpowiedź musi być w formacie JSON zgodnym z następującą strukturą:
 {{
   "przepisy": [
     {{
       "nazwa": "Nazwa przepisu 1",
       "czas_przygotowania": "np. 30 minut",
-      "poziom_trudnosci": "łatwy/średni/trudny",
+      "poziom_trudnosci": "łatwy, średni lub trudny",
       "skladniki": [
-        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram/sztuka/łyżka" }},
-        {{ "nazwa": "składnik 2", "ilosc": "liczba", "jednostka": "np. gram/sztuka/łyżka" }}
+        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram, sztuka lub łyżka" }},
+        {{ "nazwa": "składnik 2", "ilosc": "liczba", "jednostka": "np. gram, sztuka lub łyżka" }}
       ],
       "kroki": [
         {{ "numer": 1, "opis": "Pierwszy krok przygotowania" }},
@@ -57,9 +56,9 @@ Odpowiedź musi być w formacie JSON zgodnym z następującą strukturą:
     {{
       "nazwa": "Nazwa przepisu 2",
       "czas_przygotowania": "np. 45 minut",
-      "poziom_trudnosci": "łatwy/średni/trudny",
+      "poziom_trudnosci": "łatwy, średni lub trudny",
       "skladniki": [
-        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram/sztuka/łyżka" }}
+        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram, sztuka lub łyżka" }}
       ],
       "kroki": [
         {{ "numer": 1, "opis": "Pierwszy krok przygotowania" }}
@@ -69,9 +68,9 @@ Odpowiedź musi być w formacie JSON zgodnym z następującą strukturą:
     {{
       "nazwa": "Nazwa przepisu 3",
       "czas_przygotowania": "np. 20 minut",
-      "poziom_trudnosci": "łatwy/średni/trudny",
+      "poziom_trudnosci": "łatwy, średni lub trudny",
       "skladniki": [
-        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram/sztuka/łyżka" }}
+        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram, sztuka lub łyżka" }}
       ],
       "kroki": [
         {{ "numer": 1, "opis": "Pierwszy krok przygotowania" }}
@@ -155,3 +154,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
