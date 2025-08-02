@@ -4,6 +4,9 @@ from typing import List, Union
 import json
 from anthropic import Anthropic
 
+# Cache w pamięci (słownik)
+cache_memory = {}
+
 class Skladnik(BaseModel):
     nazwa: str = Field(description="Nazwa składnika")
     ilosc: Union[str, int] = Field(description="Ilość składnika")
@@ -24,7 +27,7 @@ class Przepis(BaseModel):
 class Przepisy(BaseModel):
     przepisy: List[Przepis] = Field(description="Lista przepisów na podstawie podanych składników")
 
-def generuj_przepisy(api_key: str, skladniki_w_lodowce: str) -> Przepisy:
+def _generuj_przepisy(api_key: str, skladniki_w_lodowce: str) -> Przepisy:
     client = Anthropic(api_key=api_key)
 
     prompt = f"""Na podstawie podanych składników, które użytkownik ma w lodówce, zaproponuj TRZY różne przepisy kulinarne.
@@ -34,16 +37,16 @@ Utwórz 3 różne przepisy, które wykorzystują te składniki. Każdy przepis p
 lub reprezentować inny typ dania (przystawka, danie główne, deser). Jeśli brakuje jakichś podstawowych składników,
 możesz założyć, że użytkownik ma je w swojej kuchni (jak sól, pieprz, oliwa).
 
-Odpowiedź musi być wyłącznie w formacie JSON, bez dodatkowego tekstu, zgodnym z następującą strukturą:
+Odpowiedź musi być w formacie JSON zgodnym z następującą strukturą:
 {{
   "przepisy": [
     {{
       "nazwa": "Nazwa przepisu 1",
       "czas_przygotowania": "np. 30 minut",
-      "poziom_trudnosci": "łatwy, średni lub trudny",
+      "poziom_trudnosci": "łatwy/średni/trudny",
       "skladniki": [
-        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram, sztuka lub łyżka" }},
-        {{ "nazwa": "składnik 2", "ilosc": "liczba", "jednostka": "np. gram, sztuka lub łyżka" }}
+        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram/sztuka/łyżka" }},
+        {{ "nazwa": "składnik 2", "ilosc": "liczba", "jednostka": "np. gram/sztuka/łyżka" }}
       ],
       "kroki": [
         {{ "numer": 1, "opis": "Pierwszy krok przygotowania" }},
@@ -54,9 +57,9 @@ Odpowiedź musi być wyłącznie w formacie JSON, bez dodatkowego tekstu, zgodny
     {{
       "nazwa": "Nazwa przepisu 2",
       "czas_przygotowania": "np. 45 minut",
-      "poziom_trudnosci": "łatwy, średni lub trudny",
+      "poziom_trudnosci": "łatwy/średni/trudny",
       "skladniki": [
-        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram, sztuka lub łyżka" }}
+        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram/sztuka/łyżka" }}
       ],
       "kroki": [
         {{ "numer": 1, "opis": "Pierwszy krok przygotowania" }}
@@ -66,9 +69,9 @@ Odpowiedź musi być wyłącznie w formacie JSON, bez dodatkowego tekstu, zgodny
     {{
       "nazwa": "Nazwa przepisu 3",
       "czas_przygotowania": "np. 20 minut",
-      "poziom_trudnosci": "łatwy, średni lub trudny",
+      "poziom_trudnosci": "łatwy/średni/trudny",
       "skladniki": [
-        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram, sztuka lub łyżka" }}
+        {{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram/sztuka/łyżka" }}
       ],
       "kroki": [
         {{ "numer": 1, "opis": "Pierwszy krok przygotowania" }}
@@ -81,7 +84,7 @@ Odpowiedź musi być wyłącznie w formacie JSON, bez dodatkowego tekstu, zgodny
 
     response = client.messages.create(
         model="claude-3-7-sonnet-20250219",
-        max_tokens=4000,
+        max_tokens=2000,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
     )
@@ -101,6 +104,16 @@ Odpowiedź musi być wyłącznie w formacie JSON, bez dodatkowego tekstu, zgodny
     przepisy = Przepisy(**recipes_dict)
     return przepisy
 
+# Cache w pamięci + cache Streamlit
+@st.cache_data(show_spinner=False)
+def generuj_przepisy_z_cache_streamlit(api_key: str, skladniki_w_lodowce: str) -> Przepisy:
+    key = skladniki_w_lodowce.strip().lower()
+    if key in cache_memory:
+        return cache_memory[key]
+    przepisy = _generuj_przepisy(api_key, skladniki_w_lodowce)
+    cache_memory[key] = przepisy
+    return przepisy
+
 def main():
     st.title("Generator przepisów kulinarnych 🍳")
     st.write("Podaj składniki, które masz w lodówce, a ja zaproponuję Ci 3 różne przepisy.")
@@ -118,10 +131,10 @@ def main():
 
         with st.spinner("Generuję przepisy..."):
             try:
-                przepisy = generuj_przepisy(api_key, skladniki)
+                przepisy = generuj_przepisy_z_cache_streamlit(api_key, skladniki)
 
                 # Tworzymy 5 kolumn: 3 na przepisy (25% każda), 2 na odstępy (12.5% każda)
-                cols = st.columns([0.50, 0.05, 0.50, 0.05, 0.50])
+                cols = st.columns([0.25, 0.125, 0.25, 0.125, 0.25])
 
                 for i, przepis in enumerate(przepisy.przepisy):
                     col = cols[i*2]  # 0, 2, 4 - kolumny na przepisy
@@ -142,5 +155,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
