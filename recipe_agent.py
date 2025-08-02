@@ -83,7 +83,7 @@ możesz założyć, że użytkownik ma je w swojej kuchni (jak sól, pieprz, oli
 
     response = client.messages.create(
         model="claude-3-7-sonnet-20250219",
-        max_tokens=2000,
+        max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
     )
@@ -133,25 +133,27 @@ def main():
                 przepisy = generuj_przepisy_z_cache_streamlit(api_key, skladniki)
 
                 # Tworzymy 5 kolumn: 3 na przepisy (25% każda), 2 na odstępy (12.5% każda)
-                cols = st.columns([0.25, 0.125, 0.25, 0.125, 0.25])
+                cols = st.columns([0.3, 0.05, 0.3, 0.05, 0.3])
 
                 for i, przepis in enumerate(przepisy.przepisy):
                     col = cols[i*2]  # 0, 2, 4 - kolumny na przepisy
                     with col:
                         przepis_text = f"Przepis: {przepis.nazwa}\nCzas przygotowania: {przepis.czas_przygotowania}\nPoziom trudności: {przepis.poziom_trudnosci}\n\nSkładniki:\n"
-                        for skladnik in przepis.skladniki:
-                            przepis_text += f"- {skladnik.ilosc} {skladnik.jednostka} {skladnik.nazwa}\n"
-                        przepis_text += "\nSposób przygotowania:\n"
-                        for krok in przepis.kroki:
-                            przepis_text += f"{krok.numer}. {krok.opis}\n"
-                        if przepis.sugestie.strip():
-                            przepis_text += f"\nSugestie:\n{przepis.sugestie}\n"
+                            for skladnik in przepis.skladniki:
+                                przepis_text += f"- {skladnik.ilosc} {skladnik.jednostka} {skladnik.nazwa}\n"
+                                przepis_text += "\nSposób przygotowania:\n"
+                            for krok in przepis.kroki:
+                                przepis_text += f"{krok.numer}. {krok.opis}\n"
+                            if przepis.sugestie.strip():
+                                przepis_text += f"\nSugestie:\n{przepis.sugestie}\n"
 
-                        st.code(przepis_text, language=None)
+                            # Użycie st.text_area zamiast st.code, aby mieć zawijanie i możliwość kopiowania
+                            st.text_area(label="", value=przepis_text, height=400, max_chars=None, key=f"przepis_{i}", disabled=True)
 
             except Exception as e:
                 st.error(f"Wystąpił błąd podczas generowania przepisów: {e}")
 
 if __name__ == "__main__":
     main()
+
 
