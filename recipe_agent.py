@@ -6,7 +6,7 @@ from anthropic import Anthropic
 
 class Skladnik(BaseModel):
     nazwa: str = Field(description="Nazwa składnika")
-    ilosc: str = Field(description="Ilość składnika")
+    ilosc: Union[str, int] = Field(description="Ilość składnika")
     jednostka: str = Field(description="Jednostka miary, np. gram, łyżka, sztuka")
 
 class KrokPrzygotowania(BaseModel):
@@ -129,3 +129,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
