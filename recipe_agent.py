@@ -112,26 +112,12 @@ def main():
             try:
                 przepisy = generuj_przepisy(api_key, skladniki)
 
-                cols = st.columns(3)
+                # Tworzymy 5 kolumn: 3 na przepisy (25% każda), 2 na odstępy (12.5% każda)
+                cols = st.columns([0.25, 0.125, 0.25, 0.125, 0.25])
 
-                for i, (przepis, col) in enumerate(zip(przepisy.przepisy, cols), 1):
+                for i, przepis in enumerate(przepisy.przepisy):
+                    col = cols[i*2]  # 0, 2, 4 - kolumny na przepisy
                     with col:
-                        st.header(f"Przepis {i}: {przepis.nazwa}")
-                        st.markdown(f"**Czas przygotowania:** {przepis.czas_przygotowania}")
-                        st.markdown(f"**Poziom trudności:** {przepis.poziom_trudnosci}")
-
-                        st.subheader("Składniki:")
-                        for skladnik in przepis.skladniki:
-                            st.write(f"- {skladnik.ilosc} {skladnik.jednostka} {skladnik.nazwa}")
-
-                        st.subheader("Sposób przygotowania:")
-                        for krok in przepis.kroki:
-                            st.write(f"{krok.numer}. {krok.opis}")
-
-                        if przepis.sugestie.strip():
-                            st.subheader("Sugestie:")
-                            st.write(przepis.sugestie)
-
                         przepis_text = f"Przepis: {przepis.nazwa}\nCzas przygotowania: {przepis.czas_przygotowania}\nPoziom trudności: {przepis.poziom_trudnosci}\n\nSkładniki:\n"
                         for skladnik in przepis.skladniki:
                             przepis_text += f"- {skladnik.ilosc} {skladnik.jednostka} {skladnik.nazwa}\n"
@@ -148,6 +134,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
