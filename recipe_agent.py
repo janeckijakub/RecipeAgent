@@ -161,13 +161,14 @@ def main():
                             unsafe_allow_html=True,
                         )
                 
-                        st.text_area(label="", value=przepis_text, height=400, max_chars=None, key=f"przepis_{i}", disabled=True)
+                        st.text_area(label="", value=przepis_text, width = 600, height=400, max_chars=None, key=f"przepis_{i}", disabled=False)
 
             except Exception as e:
                 st.error(f"Wystąpił błąd podczas generowania przepisów: {e}")
 
 if __name__ == "__main__":
     main()
+
 
 
 
