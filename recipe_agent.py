@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from pydantic import BaseModel, Field
 from typing import List
 import json
@@ -67,4 +69,5 @@ Return the response as JSON with this structure:
 
         data = json.loads(json_str)
         recipes = [Recipe(**r) for r in data.get("recipes", [])]
+
         return recipes
