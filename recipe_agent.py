@@ -139,13 +139,13 @@ def main():
                     col = cols[i*2]  # 0, 2, 4 - kolumny na przepisy
                     with col:
                         przepis_text = f"Przepis: {przepis.nazwa}\nCzas przygotowania: {przepis.czas_przygotowania}\nPoziom trudności: {przepis.poziom_trudnosci}\n\nSkładniki:\n"
-                            for skladnik in przepis.skladniki:
-                                przepis_text += f"- {skladnik.ilosc} {skladnik.jednostka} {skladnik.nazwa}\n"
-                                przepis_text += "\nSposób przygotowania:\n"
-                            for krok in przepis.kroki:
-                                przepis_text += f"{krok.numer}. {krok.opis}\n"
-                            if przepis.sugestie.strip():
-                                przepis_text += f"\nSugestie:\n{przepis.sugestie}\n"
+                        for skladnik in przepis.skladniki:
+                            przepis_text += f"- {skladnik.ilosc} {skladnik.jednostka} {skladnik.nazwa}\n"
+                            przepis_text += "\nSposób przygotowania:\n"
+                        for krok in przepis.kroki:
+                            przepis_text += f"{krok.numer}. {krok.opis}\n"
+                        if przepis.sugestie.strip():
+                            przepis_text += f"\nSugestie:\n{przepis.sugestie}\n"
 
                             # Użycie st.text_area zamiast st.code, aby mieć zawijanie i możliwość kopiowania
                             st.text_area(label="", value=przepis_text, height=400, max_chars=None, key=f"przepis_{i}", disabled=True)
@@ -155,5 +155,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
