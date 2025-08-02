@@ -63,8 +63,8 @@ Odpowiedź musi być w formacie JSON zgodnym z następującą strukturą:
       "nazwa": "Nazwa przepisu 3",
       "czas_przygotowania": "np. 20 minut",
       "poziom_trudnosci": "łatwy/średni/trudny",
-      "skladniki": [...],
-      "kroki": [...],
+      "skladniki": [{{ "nazwa": "składnik 1", "ilosc": "liczba", "jednostka": "np. gram/sztuka/łyżka" }}],
+      "kroki": [{{ "numer": 1, "opis": "Pierwszy krok przygotowania" }}],
       "sugestie": "Dodatkowe sugestie dotyczące przepisu"
     }}
   ]
@@ -142,4 +142,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
