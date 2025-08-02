@@ -121,7 +121,7 @@ def main():
                 przepisy = generuj_przepisy(api_key, skladniki)
 
                 # Tworzymy 5 kolumn: 3 na przepisy (25% każda), 2 na odstępy (12.5% każda)
-                cols = st.columns([0.25, 0.125, 0.25, 0.125, 0.25])
+                cols = st.columns([0.50, 0.05, 0.50, 0.05, 0.50])
 
                 for i, przepis in enumerate(przepisy.przepisy):
                     col = cols[i*2]  # 0, 2, 4 - kolumny na przepisy
@@ -142,4 +142,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
