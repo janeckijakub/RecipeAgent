@@ -73,9 +73,9 @@ Odpowiedź musi być w formacie JSON zgodnym z następującą strukturą:
 
     response = client.messages.create(
         model="claude-3-7-sonnet-20250219",
-        max_tokens=4000,
+        max_tokens=2000,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.7,
+        temperature=0.3,
     )
 
     response_text = response.content[0].text
@@ -142,3 +142,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
