@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 # ─────────────────────────────────────────────────────────────────────────────
 #  Konfiguracja strony
 # ─────────────────────────────────────────────────────────────────────────────
-st.set_page_config(page_title="Generator Przepisów AI", layout="wide")
+st.set_page_config(page_title="Generator Przepisów", layout="wide")
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Stałe – kategorie składników i ikony
@@ -354,14 +354,7 @@ with col_controls:
             # -----------------------------------------------------------------
             #  Pobranie klucza API (dobrze trzymać go w sekrecie!)
             # -----------------------------------------------------------------
-            api_key = (
-                st.secrets.get("GEMINI_API_KEY")
-                or st.text_input(
-                    "Wpisz swój klucz API Gemini",
-                    type="password",
-                    placeholder="klucz API",
-                )
-            )
+            api_key = "AIzaSyBAGk9dEdcSqJPxXFW6spIzEDcCdClUzk4"
             if not api_key:
                 st.error("Podaj klucz API Gemini.")
             else:
