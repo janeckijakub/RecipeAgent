@@ -185,35 +185,64 @@ def convert_english_to_polish(data):
     
     if "przepisy" in data:
         for recipe in data["przepisy"]:
-            # Przepis
+            # Przepis - obsługa różnych wariantów nazw pól
             if "name" in recipe:
                 recipe["nazwa"] = recipe.pop("name")
+            elif "nazwa_przepisu" in recipe:
+                recipe["nazwa"] = recipe.pop("nazwa_przepisu")
+                
             if "preparation_time" in recipe:
                 recipe["czas_przygotowania"] = recipe.pop("preparation_time")
+            elif "czas_przygotowania" not in recipe:
+                # Jeśli nie ma tego pola, ustaw domyślną wartość
+                recipe["czas_przygotowania"] = "30 minut"
+                
             if "difficulty" in recipe:
                 recipe["poziom_trudnosci"] = recipe.pop("difficulty")
+            elif "poziom_trudnosci" not in recipe:
+                recipe["poziom_trudnosci"] = "średni"
+                
             if "suggestions" in recipe:
                 recipe["sugestie"] = recipe.pop("suggestions")
+            elif "sugestie" not in recipe:
+                recipe["sugestie"] = ""
             
             # Składniki
             if "ingredients" in recipe:
                 recipe["skladniki"] = recipe.pop("ingredients")
+            
+            if "skladniki" in recipe:
                 for ingredient in recipe["skladniki"]:
                     if "name" in ingredient:
                         ingredient["nazwa"] = ingredient.pop("name")
+                    elif "nazwa_skladnik" in ingredient:
+                        ingredient["nazwa"] = ingredient.pop("nazwa_skladnik")
+                        
                     if "quantity" in ingredient:
                         ingredient["ilosc"] = ingredient.pop("quantity")
+                    elif "ilosc" not in ingredient:
+                        ingredient["ilosc"] = "1"
+                        
                     if "unit" in ingredient:
                         ingredient["jednostka"] = ingredient.pop("unit")
+                    elif "jednostka" not in ingredient:
+                        ingredient["jednostka"] = ""
             
             # Kroki
             if "instructions" in recipe:
                 recipe["kroki"] = recipe.pop("instructions")
+                
+            if "kroki" in recipe:
                 for step in recipe["kroki"]:
                     if "step" in step:
-                        step["krok"] = step.pop("step")
+                        step["numer"] = step.pop("step")
+                    elif "krok" in step:
+                        step["numer"] = step.pop("krok")
+                        
                     if "description" in step:
                         step["opis"] = step.pop("description")
+                    elif "opis" not in step:
+                        step["opis"] = "Brak opisu kroku"
     
     return data
 
