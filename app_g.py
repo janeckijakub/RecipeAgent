@@ -145,9 +145,9 @@ IKONY_KATEGORII = {
 #  Pydantic – modele z polskimi nazwami pól
 # ─────────────────────────────────────────────────────────────────────────────
 class Skladnik(BaseModel):
-    nazwa: str = Field(alias="nazwa")
-    ilosc: Union[str, int, float] = Field(alias="ilosc")
-    jednostka: str = Field(alias="jednostka", default="")
+    nazwa: str
+    ilosc: Union[str, int, float]
+    jednostka: str = ""
     
     @field_validator('jednostka', mode='before')
     @classmethod
@@ -157,128 +157,89 @@ class Skladnik(BaseModel):
 
 
 class KrokPrzygotowania(BaseModel):
-    numer: int = Field(alias="krok")
-    opis: str = Field(alias="opis")
+    numer: int
+    opis: str
 
 
 class Przepis(BaseModel):
-    nazwa: str = Field(alias="nazwa")
-    czas_przygotowania: str = Field(alias="czas_przygotowania")
-    poziom_trudnosci: str = Field(alias="poziom_trudnosci")
-    skladniki: List[Skladnik] = Field(alias="skladniki")
-    kroki: List[KrokPrzygotowania] = Field(alias="kroki")
-    sugestie: str = Field(alias="sugestie")
+    nazwa: str
+    czas_przygotowania: str
+    poziom_trudnosci: str
+    skladniki: List[Skladnik]
+    kroki: List[KrokPrzygotowania]
+    sugestie: str
 
 
 class Przepisy(BaseModel):
-    przepisy: List[Przepis] = Field(alias="przepisy")
+    przepisy: List[Przepis]
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Pomocnicze funkcje – wygenerowanie przepisu, cache
 # ─────────────────────────────────────────────────────────────────────────────
-def convert_english_to_polish(data):
-    """
-    Konwertuje angielskie nazwy pól na polskie
-    """
-    if "recipes" in data:
-        data["przepisy"] = data.pop("recipes")
-    
-    if "przepisy" in data:
-        for recipe in data["przepisy"]:
-            # Przepis - obsługa różnych wariantów nazw pól
-            if "name" in recipe:
-                recipe["nazwa"] = recipe.pop("name")
-            elif "nazwa_przepisu" in recipe:
-                recipe["nazwa"] = recipe.pop("nazwa_przepisu")
-                
-            if "preparation_time" in recipe:
-                recipe["czas_przygotowania"] = recipe.pop("preparation_time")
-            elif "czas_przygotowania" not in recipe:
-                # Jeśli nie ma tego pola, ustaw domyślną wartość
-                recipe["czas_przygotowania"] = "30 minut"
-                
-            if "difficulty" in recipe:
-                recipe["poziom_trudnosci"] = recipe.pop("difficulty")
-            elif "poziom_trudnosci" not in recipe:
-                recipe["poziom_trudnosci"] = "średni"
-                
-            if "suggestions" in recipe:
-                recipe["sugestie"] = recipe.pop("suggestions")
-            elif "sugestie" not in recipe:
-                recipe["sugestie"] = ""
-            
-            # Składniki
-            if "ingredients" in recipe:
-                recipe["skladniki"] = recipe.pop("ingredients")
-            
-            if "skladniki" in recipe:
-                for ingredient in recipe["skladniki"]:
-                    if "name" in ingredient:
-                        ingredient["nazwa"] = ingredient.pop("name")
-                    elif "nazwa_skladnik" in ingredient:
-                        ingredient["nazwa"] = ingredient.pop("nazwa_skladnik")
-                        
-                    if "quantity" in ingredient:
-                        ingredient["ilosc"] = ingredient.pop("quantity")
-                    elif "ilosc" not in ingredient:
-                        ingredient["ilosc"] = "1"
-                        
-                    if "unit" in ingredient:
-                        ingredient["jednostka"] = ingredient.pop("unit")
-                    elif "jednostka" not in ingredient:
-                        ingredient["jednostka"] = ""
-            
-            # Kroki
-            if "instructions" in recipe:
-                recipe["kroki"] = recipe.pop("instructions")
-                
-            if "kroki" in recipe:
-                for step in recipe["kroki"]:
-                    if "step" in step:
-                        step["numer"] = step.pop("step")
-                    elif "krok" in step:
-                        step["numer"] = step.pop("krok")
-                        
-                    if "description" in step:
-                        step["opis"] = step.pop("description")
-                    elif "opis" not in step:
-                        step["opis"] = "Brak opisu kroku"
-    
-    return data
-
-
 def _generuj_przepisy(api_key: str, skladniki_str: str) -> Optional[Przepisy]:
     """Komunikacja z modelem Gemini – zwraca obiekt Przepisy lub None w przypadku błędu."""
     genai.configure(api_key=api_key)
 
-    prompt = f"""Na podstawie podanych składników ("{skladniki_str}") zaproponuj TRZY różne przepisy.
+    prompt = f"""Jesteś asystentem kulinarnym. Odpowiadaj wyłącznie w języku polskim.
+Na podstawie podanych składników ("{skladniki_str}") zaproponuj TRZY różne przepisy.
 Każdy przepis powinien być inny i wykorzystywać dostępne składniki.
-Odpowiedz wyłącznie w formacie JSON zgodnym z poniższym schematem. Użyj angielskich nazw kluczy.
+
+WYNIK ZWRÓĆ WYŁĄCZNIE JAKO POPRAWNY JSON, bez żadnego dodatkowego tekstu, bez markdown, bez komentarzy.
+Użyj dokładnie następującej struktury i kluczy po polsku:
 
 {{
   "przepisy": [
     {{
-      "nazwa_przepisu": "Nazwa przepisu 1",
-      "czas_przygotowania": "np. 30 minut",
+      "nazwa": "Nazwa przepisu 1",
+      "czas_przygotowania": "30 minut",
       "poziom_trudnosci": "łatwy",
       "skladniki": [
-        {{ "nazwa_skladnik": "jajka", "ilosc": "2", "jednostka": "szt." }},
-        {{ "nazwa_skladnik": "mąka", "ilosc": "200", "jednostka": "g" }}
+        {{ "nazwa": "jajka", "ilosc": "2", "jednostka": "szt." }},
+        {{ "nazwa": "mąka", "ilosc": "200", "jednostka": "g" }}
       ],
       "kroki": [
-        {{ "krok": 1, "description": "Pierwszy krok przygotowania." }}
+        {{ "numer": 1, "opis": "Pierwszy krok przygotowania." }},
+        {{ "numer": 2, "opis": "Drugi krok przygotowania." }}
       ],
       "sugestie": "Dodatkowe sugestie dotyczące przepisu."
     }}
   ]
 }}
 
-Pamiętaj:
-- Każdy przepis powinien być kompletny i wykonalny
+PRZYKŁAD POPRAWNEJ ODPOWIEDZI:
+{{
+  "przepisy": [
+    {{
+      "nazwa": "Sałatka z pomidorów i bazylii",
+      "czas_przygotowania": "15 minut",
+      "poziom_trudnosci": "łatwy",
+      "skladniki": [
+        {{ "nazwa": "pomidory", "ilosc": "3", "jednostka": "szt." }},
+        {{ "nazwa": "bazylia świeża", "ilosc": "1", "jednostka": "garść" }},
+        {{ "nazwa": "oliwa", "ilosc": "2", "jednostka": "łyżki" }},
+        {{ "nazwa": "sól", "ilosc": "1", "jednostka": "szczypta" }}
+      ],
+      "kroki": [
+        {{ "numer": 1, "opis": "Pokrój pomidory w cząstki." }},
+        {{ "numer": 2, "opis": "Dodaj listki bazylii, skrop oliwą i dopraw solą." }}
+      ],
+      "sugestie": "Można dodać ser mozzarella lub feta dla większej sytości."
+    }}
+  ]
+}}
+
+WAŻNE ZASADY:
+- Każdy przepis MUSI być kompletny i wykonalny
 - Użyj realistycznych ilości składników
 - Podaj jasne instrukcje krok po kroku
 - Zaproponuj przydatne sugestie
-- Przepis MUSI być w języku polskim"""
+- Wszystko w języku polskim
+- Zwróć WYŁĄCZNIE JSON, bez żadnego tekstu przed ani po
+- Użyj dokładnie tych kluczy: nazwa, czas_przygotowania, poziom_trudnosci, skladniki, kroki, sugestie
+- W składnikach: nazwa, ilosc, jednostka
+- W krokach: numer, opis
+
+Składniki do wykorzystania: {skladniki_str}"""
 
     try:
         model = genai.GenerativeModel("gemini-2.0-flash-exp")
@@ -298,14 +259,19 @@ Pamiętaj:
             return None
             
         try:
-            recipes_dict = json.loads(response.text)
+            # Oczyszczenie odpowiedzi z ewentualnych znaczników markdown
+            clean_response = response.text.strip()
+            if clean_response.startswith("```json"):
+                clean_response = clean_response[7:]
+            if clean_response.endswith("```"):
+                clean_response = clean_response[:-3]
+            clean_response = clean_response.strip()
             
-            # Sprawdź czy odpowiedź jest po angielsku i przetłumacz na polskie klucze
-            if "recipes" in recipes_dict:
-                st.warning("Model odpowiedział po angielsku. Konwertuję na polskie nazwy pól...")
-                recipes_dict = convert_english_to_polish(recipes_dict)
+            recipes_dict = json.loads(clean_response)
             
+            # Bezpośrednia walidacja Pydantic - bez konwersji
             return Przepisy(**recipes_dict)
+            
         except json.JSONDecodeError as je:
             st.error(f"Błąd parsowania odpowiedzi JSON: {je}")
             st.error("Otrzymana odpowiedź:")
@@ -313,7 +279,7 @@ Pamiętaj:
             return None
         except Exception as pe:
             st.error(f"Błąd walidacji danych przepisów: {pe}")
-            st.error("Sprawdź czy odpowiedź zawiera wszystkie wymagane pola w języku polskim")
+            st.error("Model nie zwrócił odpowiedzi w oczekiwanym formacie polskim.")
             with st.expander("Zobacz surową odpowiedź"):
                 st.code(response.text)
             return None
