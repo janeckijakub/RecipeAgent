@@ -249,20 +249,18 @@ def generuj_przepisy_z_cache(api_key: str, skladniki_str: str) -> Optional[Przep
 # ─────────────────────────────────────────────────────────────────────────────
 #  Callbacki – poprawione zarządzanie stanem
 # ─────────────────────────────────────────────────────────────────────────────
-def _toggle_ingredient():
+def _toggle_ingredient(skladnik_name):
     """
-    Wywoływany po zmianie każdego checkboxa.
-    Aktualizuje `st.session_state.wybrane_skladniki` na podstawie stanu
-    wszystkich checkboxów ze wszystkich kategorii.
+    Wywoływany po zmianie konkretnego checkboxa.
+    Dodaje lub usuwa składnik z listy wybranych.
     """
-    wybrane = set()
-    # Sprawdź wszystkie kategorie, nie tylko aktualnie wybraną
-    for kat, lista in KATEGORIE_SKLADNIKOW.items():
-        for s in lista:
-            key = f"cb_{s}"
-            if st.session_state.get(key, False):
-                wybrane.add(s)
-    st.session_state.wybrane_skladniki = wybrane
+    checkbox_key = f"cb_{skladnik_name}"
+    if st.session_state.get(checkbox_key, False):
+        # Checkbox zaznaczony - dodaj składnik
+        st.session_state.wybrane_skladniki.add(skladnik_name)
+    else:
+        # Checkbox odznaczony - usuń składnik
+        st.session_state.wybrane_skladniki.discard(skladnik_name)
 
 
 def _add_custom():
@@ -332,7 +330,7 @@ with st.sidebar:
             skladnik,
             key=f"cb_{skladnik}",
             value=skladnik in st.session_state.wybrane_skladniki,
-            on_change=_toggle_ingredient,
+            on_change=lambda s=skladnik: _toggle_ingredient(s),
         )
 
 # -------------------------------------------------------------------------
