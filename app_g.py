@@ -142,12 +142,12 @@ IKONY_KATEGORII = {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Pydantic – modele z aliasami (aby JSON z Gemini pasował)
+#  Pydantic – modele z polskimi nazwami pól
 # ─────────────────────────────────────────────────────────────────────────────
 class Skladnik(BaseModel):
-    nazwa: str = Field(alias="name")
-    ilosc: Union[str, int, float] = Field(alias="quantity")
-    jednostka: str = Field(alias="unit", default="")
+    nazwa: str = Field(alias="nazwa")
+    ilosc: Union[str, int, float] = Field(alias="ilosc")
+    jednostka: str = Field(alias="jednostka", default="")
     
     @field_validator('jednostka', mode='before')
     @classmethod
@@ -157,21 +157,21 @@ class Skladnik(BaseModel):
 
 
 class KrokPrzygotowania(BaseModel):
-    numer: int = Field(alias="step")
-    opis: str = Field(alias="description")
+    numer: int = Field(alias="krok")
+    opis: str = Field(alias="opis")
 
 
 class Przepis(BaseModel):
-    nazwa: str = Field(alias="name")
-    czas_przygotowania: str = Field(alias="preparation_time")
-    poziom_trudnosci: str = Field(alias="difficulty")
-    skladniki: List[Skladnik] = Field(alias="ingredients")
-    kroki: List[KrokPrzygotowania] = Field(alias="instructions")
-    sugestie: str = Field(alias="suggestions")
+    nazwa: str = Field(alias="nazwa")
+    czas_przygotowania: str = Field(alias="czas_przygotowania")
+    poziom_trudnosci: str = Field(alias="poziom_trudnosci")
+    skladniki: List[Skladnik] = Field(alias="skladniki")
+    kroki: List[KrokPrzygotowania] = Field(alias="kroki")
+    sugestie: str = Field(alias="sugestie")
 
 
 class Przepisy(BaseModel):
-    przepisy: List[Przepis] = Field(alias="recipes")
+    przepisy: List[Przepis] = Field(alias="przepisy")
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Pomocnicze funkcje – wygenerowanie przepisu, cache
@@ -215,7 +215,8 @@ Pamiętaj:
             generation_config=genai.GenerationConfig(
                 response_mime_type="application/json",
                 temperature=0.7,
-                max_output_tokens=3000,
+                max_output_tokens=4000,
+                candidate_count=1,
             ),
         )
         
@@ -231,6 +232,12 @@ Pamiętaj:
             st.error(f"Błąd parsowania odpowiedzi JSON: {je}")
             st.error("Otrzymana odpowiedź:")
             st.code(response.text)
+            return None
+        except Exception as pe:
+            st.error(f"Błąd walidacji danych przepisów: {pe}")
+            st.error("Sprawdź czy odpowiedź zawiera wszystkie wymagane pola w języku polskim")
+            with st.expander("Zobacz surową odpowiedź"):
+                st.code(response.text)
             return None
             
     except Exception as e:
