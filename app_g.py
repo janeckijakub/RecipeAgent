@@ -227,19 +227,19 @@ Każdy przepis powinien być inny i wykorzystywać dostępne składniki.
 Odpowiedz wyłącznie w formacie JSON zgodnym z poniższym schematem. Użyj angielskich nazw kluczy.
 
 {{
-  "recipes": [
+  "przepisy": [
     {{
-      "name": "Nazwa przepisu 1",
-      "preparation_time": "np. 30 minut",
-      "difficulty": "łatwy",
-      "ingredients": [
-        {{ "name": "jajka", "quantity": "2", "unit": "szt." }},
-        {{ "name": "mąka", "quantity": "200", "unit": "g" }}
+      "nazwa_przepisu": "Nazwa przepisu 1",
+      "czas_przygotowania": "np. 30 minut",
+      "poziom_trudnosci": "łatwy",
+      "skladniki": [
+        {{ "nazwa_skladnik": "jajka", "ilosc": "2", "jednostka": "szt." }},
+        {{ "nazwa_skladnik": "mąka", "ilosc": "200", "jednostka": "g" }}
       ],
-      "instructions": [
-        {{ "step": 1, "description": "Pierwszy krok przygotowania." }}
+      "kroki": [
+        {{ "krok": 1, "description": "Pierwszy krok przygotowania." }}
       ],
-      "suggestions": "Dodatkowe sugestie dotyczące przepisu."
+      "sugestie": "Dodatkowe sugestie dotyczące przepisu."
     }}
   ]
 }}
