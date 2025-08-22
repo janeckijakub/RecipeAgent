@@ -248,7 +248,8 @@ Pamiętaj:
 - Każdy przepis powinien być kompletny i wykonalny
 - Użyj realistycznych ilości składników
 - Podaj jasne instrukcje krok po kroku
-- Zaproponuj przydatne sugestie"""
+- Zaproponuj przydatne sugestie
+- Przepis MUSI być w języku polskim"""
 
     try:
         model = genai.GenerativeModel("gemini-2.0-flash-exp")
