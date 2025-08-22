@@ -1,11 +1,9 @@
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 #  🍳 Generator przepisów – wersja zoptymalizowana pod kątem szybkości
-#  (Streamlit  ≥ 1.31, Python 3.9+)
+#  (Streamlit  ≥ 1.31, Python 3.9+)
 # ─────────────────────────────────────────────────────────────────────────────
 import json
-from typing import List, Union
+from typing import List, Union, Optional
 
 import streamlit as st
 import google.generativeai as genai
@@ -172,13 +170,14 @@ class Przepisy(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 #  Pomocnicze funkcje – wygenerowanie przepisu, cache
 # ─────────────────────────────────────────────────────────────────────────────
-def _generuj_przepisy(api_key: str, skladniki_str: str) -> Przepisy:
-    """Komunikacja z modelem Gemini – zwraca obiekt Przepisy."""
+def _generuj_przepisy(api_key: str, skladniki_str: str) -> Optional[Przepisy]:
+    """Komunikacja z modelem Gemini – zwraca obiekt Przepisy lub None w przypadku błędu."""
     genai.configure(api_key=api_key)
 
     prompt = f"""Na podstawie podanych składników ("{skladniki_str}") zaproponuj TRZY różne przepisy.
-Każdy przepis powinien być inny.
+Każdy przepis powinien być inny i wykorzystywać dostępne składniki.
 Odpowiedz wyłącznie w formacie JSON zgodnym z poniższym schematem. Użyj angielskich nazw kluczy.
+
 {{
   "recipes": [
     {{
@@ -186,39 +185,57 @@ Odpowiedz wyłącznie w formacie JSON zgodnym z poniższym schematem. Użyj angi
       "preparation_time": "np. 30 minut",
       "difficulty": "łatwy",
       "ingredients": [
-        {{ "name": "jajka", "quantity": 2, "unit": "szt." }}
+        {{ "name": "jajka", "quantity": "2", "unit": "szt." }}
       ],
       "instructions": [
         {{ "step": 1, "description": "Pierwszy krok przygotowania." }}
       ],
-      "suggestions": "Dodatkowe sugestie."
+      "suggestions": "Dodatkowe sugestie dotyczące przepisu."
     }}
   ]
 }}
-"""
+
+Pamiętaj:
+- Każdy przepis powinien być kompletny i wykonalny
+- Użyj realistycznych ilości składników
+- Podaj jasne instrukcje krok po kroku
+- Zaproponuj przydatne sugestie"""
 
     try:
-        model = genai.GenerativeModel("gemini-2.5-pro-preview-03-25")
+        model = genai.GenerativeModel("gemini-2.0-flash-exp")
         response = model.generate_content(
             prompt,
             generation_config=genai.GenerationConfig(
                 response_mime_type="application/json",
-                temperature=0.4,
-                max_output_tokens=2000,
+                temperature=0.7,
+                max_output_tokens=3000,
             ),
         )
-        recipes_dict = json.loads(response.text)
-        return Przepisy(**recipes_dict)
+        
+        # Sprawdzenie czy response zawiera tekst
+        if not response.text or not response.text.strip():
+            st.error("Model nie zwrócił żadnej odpowiedzi. Spróbuj ponownie.")
+            return None
+            
+        try:
+            recipes_dict = json.loads(response.text)
+            return Przepisy(**recipes_dict)
+        except json.JSONDecodeError as je:
+            st.error(f"Błąd parsowania odpowiedzi JSON: {je}")
+            st.error("Otrzymana odpowiedź:")
+            st.code(response.text)
+            return None
+            
     except Exception as e:
         st.error(f"Błąd komunikacji z API Gemini: {e}")
         st.info("Spróbuj ponownie lub zmodyfikuj listę składników.")
-        raise e
+        return None
 
 
 @st.cache_data(show_spinner=False)
-def generuj_przepisy_z_cache(api_key: str, skladniki_str: str) -> Przepisy:
+def generuj_przepisy_z_cache(api_key: str, skladniki_str: str) -> Optional[Przepisy]:
     """
-    Wrapper z cache.  Klucz cache jest wyliczany z posortowanej,
+    Wrapper z cache. Klucz cache jest wyliczany z posortowanej,
     znormalizowanej listy składników.
     """
     # Normalizacja – usuń spacje, małe litery, sortuj, połącz przecinkami
@@ -230,15 +247,16 @@ def generuj_przepisy_z_cache(api_key: str, skladniki_str: str) -> Przepisy:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Callbacki – bez ręcznego `st.rerun()`
+#  Callbacki – poprawione zarządzanie stanem
 # ─────────────────────────────────────────────────────────────────────────────
 def _toggle_ingredient():
     """
     Wywoływany po zmianie każdego checkboxa.
     Aktualizuje `st.session_state.wybrane_skladniki` na podstawie stanu
-    wszystkich checkboxów.
+    wszystkich checkboxów ze wszystkich kategorii.
     """
     wybrane = set()
+    # Sprawdź wszystkie kategorie, nie tylko aktualnie wybraną
     for kat, lista in KATEGORIE_SKLADNIKOW.items():
         for s in lista:
             key = f"cb_{s}"
@@ -250,25 +268,41 @@ def _toggle_ingredient():
 def _add_custom():
     """
     Dodaje wpisany w polu tekstowym własny składnik.
-    Nie używa `st.rerun()`, a jedynie modyfikuje stan.
     """
-    nowy = st.session_state.custom_input.strip()
+    nowy = st.session_state.get("custom_input", "").strip()
     if nowy:
         # unikamy duplikatów (ignorujemy wielkość liter)
         dolower = [x.lower() for x in st.session_state.dodatkowe_skladniki]
         if nowy.lower() not in dolower:
             st.session_state.dodatkowe_skladniki.append(nowy)
-    # czyścimy pole tekstowe – przy następnym renderze będzie puste
+    # czyścimy pole tekstowe
     st.session_state.custom_input = ""
+
+
+def _clear_all():
+    """Czyści wszystkie wybrane składniki"""
+    # Wyczyść checkboxy
+    for kat, lista in KATEGORIE_SKLADNIKOW.items():
+        for s in lista:
+            key = f"cb_{s}"
+            if key in st.session_state:
+                st.session_state[key] = False
+    
+    # Wyczyść listy składników
+    st.session_state.wybrane_skladniki = set()
+    st.session_state.dodatkowe_skladniki = []
+    
+    # Wyczyść przepisy
+    st.session_state.przepisy = None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Inicjalizacja session_state (pierwszy dostęp)
 # ─────────────────────────────────────────────────────────────────────────────
 if "wybrane_skladniki" not in st.session_state:
-    st.session_state.wybrane_skladniki = set()          # set of strings
+    st.session_state.wybrane_skladniki = set()
 if "dodatkowe_skladniki" not in st.session_state:
-    st.session_state.dodatkowe_skladniki = []          # list of strings
+    st.session_state.dodatkowe_skladniki = []
 if "przepisy" not in st.session_state:
     st.session_state.przepisy = None
 
@@ -345,32 +379,31 @@ with col_controls:
     if wszystkie_skladniki:
         st.markdown("---")
         c1, c2 = st.columns(2)
-        if c1.button("🧹 Wyczyść wszystko", use_container_width=True):
-            st.session_state.wybrane_skladniki = set()
-            st.session_state.dodatkowe_skladniki = []
-            if "przepisy" in st.session_state:
-                del st.session_state.przepisy
+        if c1.button("🧹 Wyczyść wszystko", use_container_width=True, on_click=_clear_all):
+            pass  # Callback już wszystko obsłuży
+            
         if c2.button("🍳 Generuj przepisy!", type="primary", use_container_width=True):
             # -----------------------------------------------------------------
-            #  Pobranie klucza API (dobrze trzymać go w sekrecie!)
+            #  Pobranie klucza API
             # -----------------------------------------------------------------
             api_key = "AIzaSyBAGk9dEdcSqJPxXFW6spIzEDcCdClUzk4"
             if not api_key:
                 st.error("Podaj klucz API Gemini.")
             else:
                 with st.spinner("🤖 Myślę nad przepisami..."):
-                    try:
-                        st.session_state.przepisy = generuj_przepisy_z_cache(
-                            api_key, ", ".join(sorted(ws.strip() for ws in wszystkie_skladniki))
-                        )
-                    except Exception:
-                        # w razie błędu usuwamy ewentualny niekompletny wynik
-                        if "przepisy" in st.session_state:
-                            del st.session_state.przepisy
+                    result = generuj_przepisy_z_cache(
+                        api_key, ", ".join(sorted(ws.strip() for ws in wszystkie_skladniki))
+                    )
+                    st.session_state.przepisy = result
 
 # ------------------------ POLE WYNIKI (prawa kolumna) --------------------
 with col_results:
-    if st.session_state.przepisy and st.session_state.przepisy.przepisy:
+    # Bezpieczne sprawdzenie istnienia przepisów
+    if (hasattr(st.session_state, 'przepisy') and 
+        st.session_state.przepisy is not None and 
+        hasattr(st.session_state.przepisy, 'przepisy') and 
+        st.session_state.przepisy.przepisy):
+        
         st.header("📋 Twoje propozycje przepisów")
         for idx, przepis in enumerate(st.session_state.przepisy.przepisy, start=1):
             with st.container(border=True):
@@ -399,12 +432,11 @@ with col_results:
                     with st.expander("💡 Sugestie i warianty"):
                         st.write(przepis.sugestie)
                 st.write("")  # odstęp między przepisami
-    elif st.session_state.przepisy is None:
-        # jeszcze nic nie wygenerowano – nie wyświetlamy żadnego komunikatu
-        pass
-    else:
-        # po nieudanej próbie generowania (np. błąd API) nic nie pokazujemy
-        pass
+                
+    elif (hasattr(st.session_state, 'przepisy') and 
+          st.session_state.przepisy is not None):
+        # Przypadek gdy przepisy zostały ustawione ale są puste/nieprawidłowe
+        st.warning("Nie udało się wygenerować przepisów. Spróbuj ponownie z innymi składnikami.")
 
 # -------------------------------------------------------------------------
 #  Koniec skryptu
