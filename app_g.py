@@ -7,7 +7,7 @@ from typing import List, Union, Optional
 
 import streamlit as st
 import google.generativeai as genai
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Konfiguracja strony
@@ -147,7 +147,13 @@ IKONY_KATEGORII = {
 class Skladnik(BaseModel):
     nazwa: str = Field(alias="name")
     ilosc: Union[str, int, float] = Field(alias="quantity")
-    jednostka: str = Field(alias="unit")
+    jednostka: str = Field(alias="unit", default="")
+    
+    @field_validator('jednostka', mode='before')
+    @classmethod
+    def validate_jednostka(cls, v):
+        """Zamień None na pusty string"""
+        return v if v is not None else ""
 
 
 class KrokPrzygotowania(BaseModel):
@@ -185,7 +191,8 @@ Odpowiedz wyłącznie w formacie JSON zgodnym z poniższym schematem. Użyj angi
       "preparation_time": "np. 30 minut",
       "difficulty": "łatwy",
       "ingredients": [
-        {{ "name": "jajka", "quantity": "2", "unit": "szt." }}
+        {{ "name": "jajka", "quantity": "2", "unit": "szt." }},
+        {{ "name": "mąka", "quantity": "200", "unit": "g" }}
       ],
       "instructions": [
         {{ "step": 1, "description": "Pierwszy krok przygotowania." }}
@@ -420,7 +427,8 @@ with col_results:
                             if isinstance(sklad.ilosc, float)
                             else str(sklad.ilosc)
                         )
-                        st.markdown(f"- **{sklad.nazwa}**: {ilosc} {sklad.jednostka}")
+                        jednostka = f" {sklad.jednostka}" if sklad.jednostka else ""
+                        st.markdown(f"- **{sklad.nazwa}**: {ilosc}{jednostka}")
                 with col_inst:
                     st.markdown("##### 📝 Sposób przygotowania:")
                     for krok in sorted(przepis.kroki, key=lambda k: k.numer):
