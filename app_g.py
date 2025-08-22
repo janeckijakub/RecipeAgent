@@ -176,6 +176,48 @@ class Przepisy(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 #  Pomocnicze funkcje – wygenerowanie przepisu, cache
 # ─────────────────────────────────────────────────────────────────────────────
+def convert_english_to_polish(data):
+    """
+    Konwertuje angielskie nazwy pól na polskie
+    """
+    if "recipes" in data:
+        data["przepisy"] = data.pop("recipes")
+    
+    if "przepisy" in data:
+        for recipe in data["przepisy"]:
+            # Przepis
+            if "name" in recipe:
+                recipe["nazwa"] = recipe.pop("name")
+            if "preparation_time" in recipe:
+                recipe["czas_przygotowania"] = recipe.pop("preparation_time")
+            if "difficulty" in recipe:
+                recipe["poziom_trudnosci"] = recipe.pop("difficulty")
+            if "suggestions" in recipe:
+                recipe["sugestie"] = recipe.pop("suggestions")
+            
+            # Składniki
+            if "ingredients" in recipe:
+                recipe["skladniki"] = recipe.pop("ingredients")
+                for ingredient in recipe["skladniki"]:
+                    if "name" in ingredient:
+                        ingredient["nazwa"] = ingredient.pop("name")
+                    if "quantity" in ingredient:
+                        ingredient["ilosc"] = ingredient.pop("quantity")
+                    if "unit" in ingredient:
+                        ingredient["jednostka"] = ingredient.pop("unit")
+            
+            # Kroki
+            if "instructions" in recipe:
+                recipe["kroki"] = recipe.pop("instructions")
+                for step in recipe["kroki"]:
+                    if "step" in step:
+                        step["krok"] = step.pop("step")
+                    if "description" in step:
+                        step["opis"] = step.pop("description")
+    
+    return data
+
+
 def _generuj_przepisy(api_key: str, skladniki_str: str) -> Optional[Przepisy]:
     """Komunikacja z modelem Gemini – zwraca obiekt Przepisy lub None w przypadku błędu."""
     genai.configure(api_key=api_key)
@@ -245,48 +287,6 @@ Pamiętaj:
             with st.expander("Zobacz surową odpowiedź"):
                 st.code(response.text)
             return None
-
-
-def convert_english_to_polish(data):
-    """
-    Konwertuje angielskie nazwy pól na polskie
-    """
-    if "recipes" in data:
-        data["przepisy"] = data.pop("recipes")
-    
-    if "przepisy" in data:
-        for recipe in data["przepisy"]:
-            # Przepis
-            if "name" in recipe:
-                recipe["nazwa"] = recipe.pop("name")
-            if "preparation_time" in recipe:
-                recipe["czas_przygotowania"] = recipe.pop("preparation_time")
-            if "difficulty" in recipe:
-                recipe["poziom_trudnosci"] = recipe.pop("difficulty")
-            if "suggestions" in recipe:
-                recipe["sugestie"] = recipe.pop("suggestions")
-            
-            # Składniki
-            if "ingredients" in recipe:
-                recipe["skladniki"] = recipe.pop("ingredients")
-                for ingredient in recipe["skladniki"]:
-                    if "name" in ingredient:
-                        ingredient["nazwa"] = ingredient.pop("name")
-                    if "quantity" in ingredient:
-                        ingredient["ilosc"] = ingredient.pop("quantity")
-                    if "unit" in ingredient:
-                        ingredient["jednostka"] = ingredient.pop("unit")
-            
-            # Kroki
-            if "instructions" in recipe:
-                recipe["kroki"] = recipe.pop("instructions")
-                for step in recipe["kroki"]:
-                    if "step" in step:
-                        step["krok"] = step.pop("step")
-                    if "description" in step:
-                        step["opis"] = step.pop("description")
-    
-    return data
             
     except Exception as e:
         st.error(f"Błąd komunikacji z API Gemini: {e}")
