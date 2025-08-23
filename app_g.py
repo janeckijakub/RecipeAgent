@@ -8,6 +8,7 @@ from typing import List, Union, Optional
 import streamlit as st
 import google.generativeai as genai
 from pydantic import BaseModel, Field, field_validator
+from dotenv import load_dotenv
 import os
 
 # Wczytanie pliku .env
