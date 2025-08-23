@@ -8,6 +8,11 @@ from typing import List, Union, Optional
 import streamlit as st
 import google.generativeai as genai
 from pydantic import BaseModel, Field, field_validator
+import os
+
+# Wczytanie pliku .env
+load_dotenv()
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Konfiguracja strony
@@ -442,7 +447,7 @@ with col_controls:
             # -----------------------------------------------------------------
             #  Pobranie klucza API
             # -----------------------------------------------------------------
-            api_key = "AIzaSyBAGk9dEdcSqJPxXFW6spIzEDcCdClUzk4"
+            api_key = os.getenv("GOOGLE_API_KEY")
             if not api_key:
                 st.error("Podaj klucz API Gemini.")
             else:
