@@ -120,40 +120,51 @@ def _clear_all():
 # ──────────────────────────────────────────────
 # GŁOSOWY KOMPONENT
 # ──────────────────────────────────────────────
-def speech_component(key="voice"):
-    html_code = """
+def speech_component(key="voice_input"):
+    html_code = f"""
     <div style="text-align:center; margin:10px;">
       <button id="micButton" style="border-radius:50%; width:80px; height:80px; font-size:30px;">🎤</button>
-      <div id="status">Kliknij mikrofon i mów...</div>
-      <div id="result" style="margin-top:10px; font-weight:bold;"></div>
+      <div id="status" style="margin-top:10px; font-weight:bold;">Kliknij mikrofon i mów...</div>
+      <div id="result" style="margin-top:10px; font-weight:bold; color:#333;"></div>
     </div>
     <script>
       let recognition;
       let isListening = false;
-      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {{
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = true;
         recognition.lang = 'pl-PL';
-        recognition.onresult = (event) => {
+        recognition.onresult = (event) => {{
           let finalTranscript = "";
-          for (let i=event.resultIndex; i<event.results.length; i++) {
+          for (let i=event.resultIndex; i<event.results.length; i++) {{
             if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
-          }
-          if (finalTranscript) {
+          }}
+          if (finalTranscript) {{
             document.getElementById('result').innerText = finalTranscript;
-            window.parent.postMessage({isStreamlitMessage: true, type:'streamlit:setComponentValue', key:'""" + key + """', value:finalTranscript}, '*');
-          }
-        };
-      }
-      document.getElementById('micButton').onclick = () => {
-        if (!isListening) { recognition.start(); isListening=true; document.getElementById('micButton').style.background="red";}
-        else { recognition.stop(); isListening=false; document.getElementById('micButton').style.background=""; }
-      };
+            window.parent.postMessage({{isStreamlitMessage: true, type:'streamlit:setComponentValue', key:'{key}', value:finalTranscript}}, '*');
+          }}
+        }};
+      }}
+      document.getElementById('micButton').onclick = () => {{
+        if (!isListening) {{
+          recognition.start();
+          isListening=true;
+          document.getElementById('micButton').style.background="red";
+          document.getElementById('status').innerText="🎙️ Słucham...";
+        }}
+        else {{
+          recognition.stop();
+          isListening=false;
+          document.getElementById('micButton').style.background="";
+          document.getElementById('status').innerText="⏹️ Zatrzymano.";
+        }}
+      }};
     </script>
     """
-    return components.html(html_code, height=200, key=key)
+    return components.html(html_code, height=250)
+
 
 
 # ──────────────────────────────────────────────
