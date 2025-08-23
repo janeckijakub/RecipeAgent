@@ -117,7 +117,10 @@ def _clear_all():
 # ──────────────────────────────────────────────
 # GŁOSOWY KOMPONENT
 # ──────────────────────────────────────────────
-def speech_component():
+# ──────────────────────────────────────────────
+# GŁOSOWY KOMPONENT
+# ──────────────────────────────────────────────
+def speech_component(key="voice"):
     html_code = """
     <div style="text-align:center; margin:10px;">
       <button id="micButton" style="border-radius:50%; width:80px; height:80px; font-size:30px;">🎤</button>
@@ -140,7 +143,7 @@ def speech_component():
           }
           if (finalTranscript) {
             document.getElementById('result').innerText = finalTranscript;
-            window.parent.postMessage({type:'streamlit:setComponentValue', value:finalTranscript}, '*');
+            window.parent.postMessage({isStreamlitMessage: true, type:'streamlit:setComponentValue', key:'""" + key + """', value:finalTranscript}, '*');
           }
         };
       }
@@ -150,7 +153,8 @@ def speech_component():
       };
     </script>
     """
-    return components.html(html_code, height=200)
+    return components.html(html_code, height=200, key=key)
+
 
 # ──────────────────────────────────────────────
 # INICJALIZACJA STANU
@@ -169,7 +173,9 @@ if "przepisy" not in st.session_state:
 # ──────────────────────────────────────────────
 st.title("🍳 Generator przepisów z obsługą głosu")
 st.subheader("🎤 Sterowanie głosowe")
-voice_text = speech_component()
+speech_component(key="voice_input")
+
+voice_text = st.session_state.get("voice_input", "")
 
 if voice_text:
     st.session_state.voice_command = voice_text.strip().lower()
